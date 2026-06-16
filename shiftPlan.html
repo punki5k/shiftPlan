@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Shifts</title>
+    <style>
+        :root {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text: #000000;
+            --text-sec: #8e8e93;
+            --border: rgba(0, 0, 0, 0.1);
+            --blue: #007aff;
+            --green: #30d158;
+            --red: #ff453a;
+        }
+
+        [data-theme="dark"] {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --text: #ffffff;
+            --text-sec: #98989d;
+            --border: rgba(255, 255, 255, 0.12);
+            --green: #32d74b;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--card);
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        [data-theme="dark"] .sticky-header {
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .top-bar {
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg);
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.15s;
+        }
+        .icon-btn:active { opacity: 0.5; }
+
+        .months {
+            display: flex;
+            padding: 0 20px 12px 20px;
+            gap: 10px;
+        }
+        
+        .month-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: var(--bg);
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-sec);
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .month-btn.active { 
+            background: var(--text); 
+            color: var(--bg);
+        }
+        .month-btn:active { opacity: 0.7; }
+
+        .counters {
+            display: flex;
+            gap: 10px;
+            padding: 0 20px 16px 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .counters::-webkit-scrollbar { display: none; }
+        
+        .counter {
+            flex: 0 0 auto;
+            padding: 8px 14px;
+            background: var(--bg);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .counter.full { 
+            background: var(--green); 
+            color: #000000;
+            border-color: var(--green);
+            font-weight: 700;
+        }
+        
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        .day-list { 
+            padding: 16px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+        }
+        
+        .day-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        
+        .day-header {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .day-header .date { 
+            color: var(--text-sec); 
+            font-weight: 500; 
+            font-size: 0.9rem;
+        }
+
+        .person-row { margin-bottom: 14px; }
+        .person-row:last-child { margin-bottom: 0; }
+        
+        .person-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .shift-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .shift-btn {
+            padding: 12px 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .shift-btn:active { opacity: 0.6; }
+        .shift-btn .icon { font-size: 1.2rem; }
+        
+        .shift-btn.active { 
+            color: #ffffff; 
+            border-color: transparent; 
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card);
+            padding: 14px 20px;
+            padding-bottom: max(14px, env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            border-top: 0.5px solid var(--border);
+            z-index: 100;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .action-btn:active { opacity: 0.7; }
+        .btn-primary { background: var(--text); color: var(--bg); }
+        .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal.show { display: flex; }
+        
+        .modal-content {
+            background: var(--card);
+            width: 100%;
+            border-radius: 20px 20px 0 0;
+            padding: 24px;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title { font-size: 1.2rem; font-weight: 700; margin: 0; }
+        .close-btn { 
+            width: 32px; height: 32px; border-radius: 50%; border: none; 
+            background: var(--bg); font-size: 1.2rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.15s;
+        }
+        .close-btn:active { opacity: 0.6; }
+
+        .team-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .team-input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-weight: 600;
+            font-size: 16px; /* Verhindert iOS Auto-Zoom */
+            outline: none;
+            color: var(--text);
+        }
+        .add-row { display: flex; gap: 10px; margin-top: 20px; }
+        .add-row input {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px; /* Verhindert iOS Auto-Zoom */
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+        }
+        .add-row button {
+            padding: 14px 20px;
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .add-row button:active { opacity: 0.7; }
+
+        textarea {
+            width: 100%;
+            height: 160px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: 'SF Mono', monospace;
+            font-size: 13px;
+            margin-bottom: 16px;
+            resize: none;
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 20px 0;
+        }
+
+        .btn-danger {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--red);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-danger:active { opacity: 0.7; }
+
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--card);
+            color: var(--text);
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 300;
+            white-space: nowrap;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 1px solid var(--border);
+        }
+        .toast.show { 
+            opacity: 1; 
+            transform: translateX(-50%) translateY(0); 
+        }
+        .toast.warn { 
+            background: var(--red); 
+            color: #ffffff; 
+            border-color: var(--red);
+        }
+    </style>
+</head>
+<body>
+
+<div class="sticky-header">
+    <div class="top-bar">
+        <h1 class="title">Shifts</h1>
+        <div style="display: flex; gap: 8px;">
+            <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+            <button class="icon-btn" onclick="shareSummary()" title="Übersicht als Tabelle kopieren">📋</button>
+            <button class="icon-btn" onclick="openModal('team')">⚙️</button>
+        </div>
+    </div>
+    <div class="months">
+        <button class="month-btn active" onclick="setMonth(6)">Juli</button>
+        <button class="month-btn" onclick="setMonth(7)">August</button>
+        <button class="month-btn" onclick="setMonth(8)">September</button>
+    </div>
+    <div class="counters" id="counters"></div>
+</div>
+
+<div class="day-list" id="days"></div>
+
+<div class="bottom-bar">
+    <button class="action-btn btn-secondary" onclick="openModal('import')">Import</button>
+    <button class="action-btn btn-primary" onclick="exportData()">Export (JSON)</button>
+</div>
+
+<!-- Team Modal -->
+<div class="modal" id="teamModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Einstellungen</h3>
+            <button class="close-btn" onclick="closeModal('team')">×</button>
+        </div>
+        <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: var(--text-sec);">TEAM</div>
+        <div id="teamList"></div>
+        <div class="add-row">
+            <input type="text" id="newPerson" placeholder="Name..." maxlength="15">
+            <button onclick="addPerson()">+</button>
+        </div>
+        
+        <div class="divider"></div>
+        <button class="btn-danger" onclick="resetMonth()">Monat zurücksetzen</button>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal" id="importModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Import</h3>
+            <button class="close-btn" onclick="closeModal('import')">×</button>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-sec); margin: -10px 0 16px 0; line-height: 1.4;">
+            Nur Schichten für aktuelle Personen werden übernommen.
+        </p>
+        <textarea id="importData" placeholder="JSON hier einfügen..."></textarea>
+        <button class="action-btn btn-primary" onclick="importData()" style="width: 100%;">Importieren</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Theme (Default: Dark)
+const themeBtn = document.getElementById('themeBtn');
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+let currentMonth = 6;
+const year = 2026;
+const shifts = [
+    { key: 'EM', label: 'Früh', icon: '🌅', type: 'm' },
+    { key: 'LM', label: 'Vorm', icon: '☀️', type: 'm' },
+    { key: 'EA', label: 'Nach', icon: '🌇', type: 'a' },
+    { key: 'LA', label: 'Spät', icon: '🌙', type: 'a' }
+];
+
+let data = { people: [], shifts: {} };
+
+function loadData() {
+    try {
+        const stored = localStorage.getItem('shifts_final_dark');
+        if (stored) data = JSON.parse(stored);
+        if (!data.people || data.people.length === 0) {
+            data.people = [
+                { id: 'p1', name: 'Du', color: '#007aff' },
+                { id: 'p2', name: 'Hamed', color: '#32d74b' }
+            ];
+        }
+    } catch(e) {}
+}
+
+function saveData() {
+    localStorage.setItem('shifts_final_dark', JSON.stringify(data));
+}
+
+function getDays(month) {
+    const days = [];
+    const date = new Date(year, month, 1);
+    while (date.getMonth() === month) {
+        if (date.getDay() !== 0 && date.getDay() !== 6) days.push(new Date(date));
+        date.setDate(date.getDate() + 1);
+    }
+    return days;
+}
+
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+
+function setMonth(m) {
+    currentMonth = m;
+    document.querySelectorAll('.month-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i + 6 === m);
+    });
+    // Sofort nach oben scrollen ohne Animation
+    window.scrollTo(0, 0);
+    render();
+}
+
+function count(personId) {
+    let c = 0;
+    getDays(currentMonth).forEach(d => {
+        const s = data.shifts[dateKey(d)]?.[personId];
+        if (s) c += s.length;
+    });
+    return c;
+}
+
+function render() {
+    document.getElementById('counters').innerHTML = data.people.map(p => {
+        const c = count(p.id);
+        return `<div class="counter ${c >= 7 ? 'full' : ''}">
+            <div class="dot" style="background: ${p.color}"></div>
+            <span>${p.name}</span>
+            <span>${c}/7</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('days').innerHTML = getDays(currentMonth).map(date => {
+        const key = dateKey(date);
+        const dayData = data.shifts[key] || {};
+        const dayName = date.toLocaleDateString('de-DE', { weekday: 'long' });
+        const dateNum = date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+        
+        return `<div class="day-card">
+            <div class="day-header">
+                <span>${dayName}</span>
+                <span class="date">${dateNum}</span>
+            </div>
+            ${data.people.map(p => {
+                const pShifts = dayData[p.id] || [];
+                return `<div class="person-row">
+                    <div class="person-name" style="color: ${p.color}">
+                        <div class="dot" style="background: ${p.color}"></div> ${p.name}
+                    </div>
+                    <div class="shift-grid">
+                        ${shifts.map(s => {
+                            const active = pShifts.includes(s.key) ? 'active' : '';
+                            return `<div class="shift-btn ${active}" 
+                                style="${active ? `background: ${p.color}` : ''}"
+                                onclick="toggle('${p.id}', '${key}', '${s.key}')">
+                                <span class="icon">${s.icon}</span>
+                                <span>${s.label}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    }).join('');
+}
+
+function toggle(personId, date, shiftKey) {
+    if (!data.shifts[date]) data.shifts[date] = {};
+    if (!data.shifts[date][personId]) data.shifts[date][personId] = [];
+    
+    let current = data.shifts[date][personId];
+    const shiftDef = shifts.find(s => s.key === shiftKey);
+    
+    if (current.includes(shiftKey)) {
+        current = current.filter(s => s !== shiftKey);
+    } else {
+        if (count(personId) >= 7) {
+            showToast("Limit erreicht (7/7)", true);
+            return;
+        }
+        current = current.filter(s => {
+            const existingDef = shifts.find(x => x.key === s);
+            return existingDef.type !== shiftDef.type;
+        });
+        current.push(shiftKey);
+    }
+    
+    data.shifts[date][personId] = current;
+    if (current.length === 0) delete data.shifts[date][personId];
+    if (Object.keys(data.shifts[date]).length === 0) delete data.shifts[date];
+    
+    saveData();
+    render();
+}
+
+function openModal(id) {
+    if (id === 'team') renderTeam();
+    document.getElementById(id + 'Modal').classList.add('show');
+}
+
+function closeModal(id) {
+    document.getElementById(id + 'Modal').classList.remove('show');
+}
+
+function renderTeam() {
+    document.getElementById('teamList').innerHTML = data.people.map((p, i) => `
+        <div class="team-item">
+            <div class="dot" style="background: ${p.color}; width: 12px; height: 12px;"></div>
+            <input class="team-input" value="${p.name}" style="color: ${p.color}"
+                onchange="updateName(${i}, this.value)">
+            ${data.people.length > 1 ? `<button style="background:none;border:none;color:var(--red);font-size:1.4rem;padding:0 8px;cursor:pointer;" onclick="deletePerson(${i})">×</button>` : ''}
+        </div>
+    `).join('');
+}
+
+function addPerson() {
+    const input = document.getElementById('newPerson');
+    const name = input.value.trim();
+    if (!name) return;
+    
+    const colors = ['#007aff', '#32d74b', '#ff9f0a', '#ff453a', '#bf5af2', '#5ac8fa'];
+    data.people.push({
+        id: 'p' + Date.now(),
+        name: name,
+        color: colors[data.people.length % colors.length]
+    });
+    input.value = '';
+    saveData();
+    renderTeam();
+    render();
+}
+
+function updateName(index, name) {
+    data.people[index].name = name;
+    saveData();
+    render();
+}
+
+function deletePerson(index) {
+    if (!confirm('Person und alle zugeordneten Schichten löschen?')) return;
+    const id = data.people[index].id;
+    Object.keys(data.shifts).forEach(k => {
+        delete data.shifts[k][id];
+        if (Object.keys(data.shifts[k]).length === 0) delete data.shifts[k];
+    });
+    data.people.splice(index, 1);
+    saveData();
+    renderTeam();
+    render();
+}
+
+function resetMonth() {
+    if (!confirm('Alle Schichten in diesem Monat wirklich löschen?')) return;
+    getDays(currentMonth).forEach(d => {
+        delete data.shifts[dateKey(d)];
+    });
+    saveData();
+    render();
+    closeModal('team');
+    showToast("✓ Monat zurückgesetzt");
+}
+
+// --- TABELLEN-EXPORT ZUM TEILEN ---
+function shareSummary() {
+    const monthNames = ["Juli", "August", "September"];
+    const shiftNames = { 'EM': 'Früh', 'LM': 'Vorm', 'EA': 'Nach', 'LA': 'Spät' };
+    let text = "📅 SCHICHTPLAN 2026\n";
+    text += "════════════════════════════════════════════════════\n\n";
+    let hasAnyShifts = false;
+
+    [6, 7, 8].forEach(m => {
+        const days = getDays(m);
+        text += `📆 ${monthNames[m-6].toUpperCase()}\n`;
+        text += "────────────────────────────────────────────────────\n";
+        
+        // Tabellen-Header
+        let header = "Datum".padEnd(12);
+        data.people.forEach(p => {
+            header += p.name.padEnd(20);
+        });
+        text += header + "\n";
+        
+        let monthHasData = false;
+        
+        days.forEach(d => {
+            const key = dateKey(d);
+            const dayData = data.shifts[key];
+            const dayName = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+            
+            let row = dayName.padEnd(12);
+            let hasShiftsThisDay = false;
+            
+            data.people.forEach(p => {
+                if (dayData && dayData[p.id] && dayData[p.id].length > 0) {
+                    const shiftsStr = dayData[p.id].map(s => shiftNames[s]).join(', ');
+                    row += shiftsStr.padEnd(20);
+                    hasShiftsThisDay = true;
+                    hasAnyShifts = true;
+                    monthHasData = true;
+                } else {
+                    row += "-".padEnd(20);
+                }
+            });
+            
+            if (hasShiftsThisDay) {
+                text += row + "\n";
+            }
+        });
+        
+        if (!monthHasData) {
+            text += "Keine Schichten\n";
+        }
+        text += "\n";
+    });
+
+    if (!hasAnyShifts) {
+        showToast("Keine Schichten zum Teilen", true);
+        return;
+    }
+
+    text += "════════════════════════════════════════════════════\n";
+    text += "Legende: Früh=🌅  Vorm=☀️  Nach=🌇  Spät=🌙\n";
+
+    navigator.clipboard.writeText(text).then(() => {
+        showToast("✓ Tabelle kopiert!");
+    }).catch(() => {
+        showToast("✗ Kopieren fehlgeschlagen", true);
+    });
+}
+
+function exportData() {
+    navigator.clipboard.writeText(JSON.stringify(data)).then(() => {
+        showToast("✓ JSON kopiert");
+    });
+}
+
+function importData() {
+    const text = document.getElementById('importData').value.trim();
+    if (!text) return;
+    try {
+        const imp = JSON.parse(text);
+        if (!imp.shifts) throw new Error();
+        
+        const validIds = new Set(data.people.map(p => p.id));
+        const filtered = {};
+        let skipped = 0;
+        
+        for (const [date, dayData] of Object.entries(imp.shifts)) {
+            const validDay = {};
+            for (const [pid, pShifts] of Object.entries(dayData)) {
+                if (validIds.has(pid)) validDay[pid] = pShifts;
+                else skipped += pShifts.length;
+            }
+            if (Object.keys(validDay).length) filtered[date] = validDay;
+        }
+        
+        data.shifts = filtered;
+        saveData();
+        render();
+        closeModal('import');
+        showToast(skipped > 0 ? `✓ Importiert (${skipped} ignoriert)` : "✓ Importiert");
+    } catch(e) {
+        showToast("✗ Ungültiges Format", true);
+    }
+}
+
+function showToast(msg, warn = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (warn ? ' warn' : '');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Initialisierung
+loadData();
+render();
+</script>
+</body>
+</html>
