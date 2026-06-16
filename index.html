@@ -261,15 +261,21 @@
             margin-bottom: 20px;
         }
         .modal-title { font-size: 1.2rem; font-weight: 700; margin: 0; }
+        
         .close-btn { 
             width: 32px; height: 32px; border-radius: 50%; border: none; 
-            background: var(--bg); font-size: 1.2rem; cursor: pointer; 
+            background: var(--bg); 
+            color: var(--red); 
+            font-size: 1.5rem; 
+            font-weight: 300;
+            line-height: 1;
+            cursor: pointer; 
             display: flex; align-items: center; justify-content: center;
             transition: opacity 0.15s;
         }
         .close-btn:active { opacity: 0.6; }
 
-        .team-item {
+        .team-item, .share-item {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -278,12 +284,48 @@
             border-radius: 12px;
             margin-bottom: 10px;
         }
+        .share-item {
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .share-item:active { opacity: 0.7; }
+        
+        .share-item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .share-checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            border: 2px solid var(--text-sec);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .share-item.selected .share-checkbox {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+        .share-item.selected .share-checkbox::after {
+            content: "✓";
+            font-size: 14px;
+            font-weight: bold;
+        }
+
         .team-input {
             flex: 1;
             border: none;
             background: none;
             font-weight: 600;
-            font-size: 16px; /* Verhindert iOS Auto-Zoom */
+            font-size: 16px; 
             outline: none;
             color: var(--text);
         }
@@ -293,7 +335,7 @@
             padding: 14px;
             border: 1px solid var(--border);
             border-radius: 12px;
-            font-size: 16px; /* Verhindert iOS Auto-Zoom */
+            font-size: 16px; 
             background: var(--bg);
             color: var(--text);
             outline: none;
@@ -343,8 +385,23 @@
             font-size: 0.95rem;
             cursor: pointer;
             transition: opacity 0.15s;
+            margin-bottom: 10px;
         }
         .btn-danger:active { opacity: 0.7; }
+        
+        .btn-danger-outline {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            color: var(--red);
+            border: 1.5px solid var(--red);
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.15s, background-color 0.15s;
+        }
+        .btn-danger-outline:active { opacity: 0.7; background-color: rgba(255, 69, 58, 0.1); }
 
         .toast {
             position: fixed;
@@ -383,7 +440,7 @@
         <h1 class="title">Shifts</h1>
         <div style="display: flex; gap: 8px;">
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
-            <button class="icon-btn" onclick="shareSummary()" title="Übersicht als Tabelle kopieren">📋</button>
+            <button class="icon-btn" onclick="openShareModal()" title="Übersicht als Tabelle kopieren">📋</button>
             <button class="icon-btn" onclick="openModal('team')">⚙️</button>
         </div>
     </div>
@@ -403,7 +460,7 @@
 </div>
 
 <!-- Team Modal -->
-<div class="modal" id="teamModal">
+<div class="modal" id="teamModal" onclick="if(event.target === this) closeModal('team')">
     <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Einstellungen</h3>
@@ -417,12 +474,30 @@
         </div>
         
         <div class="divider"></div>
-        <button class="btn-danger" onclick="resetMonth()">Monat zurücksetzen</button>
+        <button class="btn-danger" onclick="resetMonth()">Nur diesen Monat zurücksetzen</button>
+        <button class="btn-danger-outline" onclick="resetAll()">⚠️ Alles komplett zurücksetzen</button>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal" id="shareModal" onclick="if(event.target === this) closeModal('share')">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Übersicht teilen</h3>
+            <button class="close-btn" onclick="closeModal('share')">×</button>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-sec); margin: -10px 0 16px 0;">Personen für die Tabelle auswählen:</p>
+        <div id="sharePersonList"></div>
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <button class="action-btn btn-secondary" onclick="toggleAllShare(true)" style="font-size: 0.85rem; padding: 10px;">Alle</button>
+            <button class="action-btn btn-secondary" onclick="toggleAllShare(false)" style="font-size: 0.85rem; padding: 10px;">Keine</button>
+        </div>
+        <button class="action-btn btn-primary" onclick="generateAndCopyTable()" style="width: 100%; margin-top: 16px;">📋 Tabelle kopieren</button>
     </div>
 </div>
 
 <!-- Import Modal -->
-<div class="modal" id="importModal">
+<div class="modal" id="importModal" onclick="if(event.target === this) closeModal('import')">
     <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Import</h3>
@@ -453,6 +528,15 @@ function toggleTheme() {
     themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
+// Escape-Taste schließt alle Modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal('team');
+        closeModal('share');
+        closeModal('import');
+    }
+});
+
 let currentMonth = 6;
 const year = 2026;
 const shifts = [
@@ -463,6 +547,7 @@ const shifts = [
 ];
 
 let data = { people: [], shifts: {} };
+let shareSelection = new Set();
 
 function loadData() {
     try {
@@ -498,7 +583,6 @@ function setMonth(m) {
     document.querySelectorAll('.month-btn').forEach((btn, i) => {
         btn.classList.toggle('active', i + 6 === m);
     });
-    // Sofort nach oben scrollen ohne Animation
     window.scrollTo(0, 0);
     render();
 }
@@ -652,8 +736,67 @@ function resetMonth() {
     showToast("✓ Monat zurückgesetzt");
 }
 
-// --- TABELLEN-EXPORT ZUM TEILEN ---
-function shareSummary() {
+function resetAll() {
+    if (!confirm('Wirklich ALLES löschen?\n\nAlle Schichten und Personen werden auf den Standard (Du & Hamed) zurückgesetzt. Dies kann nicht rückgängig gemacht werden.')) return;
+    data = {
+        people: [
+            { id: 'p1', name: 'Du', color: '#007aff' },
+            { id: 'p2', name: 'Hamed', color: '#32d74b' }
+        ],
+        shifts: {}
+    };
+    saveData();
+    render();
+    closeModal('team');
+    showToast("✓ Alles zurückgesetzt");
+}
+
+// --- SHARE / TABELLEN LOGIK ---
+function openShareModal() {
+    shareSelection.clear();
+    data.people.forEach(p => shareSelection.add(p.id)); // Standard: Alle ausgewählt
+    renderShareList();
+    document.getElementById('shareModal').classList.add('show');
+}
+
+function renderShareList() {
+    document.getElementById('sharePersonList').innerHTML = data.people.map(p => {
+        const isSelected = shareSelection.has(p.id);
+        return `
+        <div class="share-item ${isSelected ? 'selected' : ''}" onclick="toggleSharePerson('${p.id}')">
+            <div class="share-item-info">
+                <div class="dot" style="background: ${p.color}; width: 12px; height: 12px;"></div>
+                <span>${p.name}</span>
+            </div>
+            <div class="share-checkbox"></div>
+        </div>`;
+    }).join('');
+}
+
+function toggleSharePerson(id) {
+    if (shareSelection.has(id)) {
+        shareSelection.delete(id);
+    } else {
+        shareSelection.add(id);
+    }
+    renderShareList();
+}
+
+function toggleAllShare(selectAll) {
+    shareSelection.clear();
+    if (selectAll) {
+        data.people.forEach(p => shareSelection.add(p.id));
+    }
+    renderShareList();
+}
+
+function generateAndCopyTable() {
+    const selectedPeople = data.people.filter(p => shareSelection.has(p.id));
+    if (selectedPeople.length === 0) {
+        showToast("Mindestens 1 Person auswählen", true);
+        return;
+    }
+
     const monthNames = ["Juli", "August", "September"];
     const shiftNames = { 'EM': 'Früh', 'LM': 'Vorm', 'EA': 'Nach', 'LA': 'Spät' };
     let text = "📅 SCHICHTPLAN 2026\n";
@@ -665,10 +808,10 @@ function shareSummary() {
         text += `📆 ${monthNames[m-6].toUpperCase()}\n`;
         text += "────────────────────────────────────────────────────\n";
         
-        // Tabellen-Header
         let header = "Datum".padEnd(12);
-        data.people.forEach(p => {
-            header += p.name.padEnd(20);
+        selectedPeople.forEach(p => {
+            let width = Math.max(15, p.name.length + 3);
+            header += p.name.padEnd(width);
         });
         text += header + "\n";
         
@@ -682,15 +825,16 @@ function shareSummary() {
             let row = dayName.padEnd(12);
             let hasShiftsThisDay = false;
             
-            data.people.forEach(p => {
+            selectedPeople.forEach(p => {
+                let width = Math.max(15, p.name.length + 3);
                 if (dayData && dayData[p.id] && dayData[p.id].length > 0) {
                     const shiftsStr = dayData[p.id].map(s => shiftNames[s]).join(', ');
-                    row += shiftsStr.padEnd(20);
+                    row += shiftsStr.padEnd(width);
                     hasShiftsThisDay = true;
                     hasAnyShifts = true;
                     monthHasData = true;
                 } else {
-                    row += "-".padEnd(20);
+                    row += "-".padEnd(width);
                 }
             });
             
@@ -715,6 +859,7 @@ function shareSummary() {
 
     navigator.clipboard.writeText(text).then(() => {
         showToast("✓ Tabelle kopiert!");
+        closeModal('share');
     }).catch(() => {
         showToast("✗ Kopieren fehlgeschlagen", true);
     });
